@@ -38,13 +38,14 @@ func (c *Controller) SetTransport(t *http.Transport) {
 	c.httpClient.Transport = t
 }
 
-
+// Login, required before any other function will work, unifi uses cookies that are saved in memory
 func (c *Controller) Login(user string, pass string) (err error) {
 	login := unifiLogin{
 		User: user,
 		Pass: pass,
 	}
-	json, _ := json.Marshal(&login)
+	json, err := json.Marshal(&login)
+	if err != nil {return  err}
 	rsp, err := c.httpClient.Post(c.url + `/api/login`,"application/json",bytes.NewBuffer(json))
 	if rsp.StatusCode == http.StatusOK {
 	 	return err
@@ -52,14 +53,15 @@ func (c *Controller) Login(user string, pass string) (err error) {
 	body, err := ioutil.ReadAll(rsp.Body)
 	return fmt.Errorf("req: %+v, body %s", rsp, body)
 }
-
+// authorize guest access for a given mac
 func (c *Controller) AuthorizeGuest(mac string, time time.Duration) (err error) {
 	authorize := unifiAuthorize {
 		Cmd: "authorize-guest",
 		Mac: mac,
-		Minutes: fmt.Sprintf("%1f",time.Minutes()),
+		Minutes: int(time.Minutes()),
 	}
-	json, _ := json.Marshal(&authorize)
+	json, err := json.Marshal(&authorize)
+	if err != nil {return  err}
 	rsp, err := c.httpClient.Post(c.url + `/api/s/` + c.site + `/cmd/stamgr`,"application/json",bytes.NewBuffer(json))
 	if rsp.StatusCode == http.StatusOK {
 		return err
@@ -67,16 +69,18 @@ func (c *Controller) AuthorizeGuest(mac string, time time.Duration) (err error) 
 	body, err := ioutil.ReadAll(rsp.Body)
 	return fmt.Errorf("req: %+v, body %s", rsp, body)
 }
-
+// get list of all clients within last 24 hours
 func (c *Controller) GetClients() ([]UnifiClient, error){
 	rsp, err := c.httpClient.Post(
 		c.url + `/api/s/` + c.site + `/stat/guest?within=24r`,
 		"application/json",
 		bytes.NewBuffer([]byte("{}")),
 	)
-	_ = err
-	body, _ := ioutil.ReadAll(rsp.Body)
+	if err != nil {return []UnifiClient{}, err}
+	body, err := ioutil.ReadAll(rsp.Body)
+	if err != nil {return []UnifiClient{}, err}
 	var result  UnifiClientResult
-	json.Unmarshal(body, &result)
+	err = json.Unmarshal(body, &result)
+	if err != nil {return []UnifiClient{}, err}
 	return result.Data, err
 }
