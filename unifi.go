@@ -47,6 +47,7 @@ func (c *Controller) Login(user string, pass string) (err error) {
 	json, err := json.Marshal(&login)
 	if err != nil {return  err}
 	rsp, err := c.httpClient.Post(c.url + `/api/login`,"application/json",bytes.NewBuffer(json))
+	if err != nil { return err }
 	if rsp.StatusCode == http.StatusOK {
 	 	return err
 	}
