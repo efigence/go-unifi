@@ -61,11 +61,10 @@ func (c *Controller) AuthorizeGuest(mac string, time time.Duration) (err error) 
 		Minutes: int(time.Minutes()),
 	}
 	json, err := json.Marshal(&authorize)
-	if err != nil {return  err}
+	if err != nil { return  err}
 	rsp, err := c.httpClient.Post(c.url + `/api/s/` + c.site + `/cmd/stamgr`,"application/json",bytes.NewBuffer(json))
-	if rsp.StatusCode == http.StatusOK {
-		return err
-	}
+	if err != nil { return err }
+	if rsp.StatusCode == http.StatusOK { return err }
 	body, err := ioutil.ReadAll(rsp.Body)
 	return fmt.Errorf("req: %+v, body %s", rsp, body)
 }
